@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Evaluation;
+using Microsoft.Build.Logging;
 
 namespace DuplicateFinder
 {
@@ -28,6 +30,7 @@ namespace DuplicateFinder
 	{
 		private readonly DirectoryInfo _inputDir;
 		private readonly Dictionary<string, string> globals;
+		private readonly string _ignorePattern = null;
 
 		public DuplicateFinder(DirectoryInfo dir, Dictionary<string, string> globalProperties)
 		{
@@ -35,11 +38,38 @@ namespace DuplicateFinder
 			globals = globalProperties;
 		}
 
+		public DuplicateFinder(DirectoryInfo dir, Dictionary<string, string> globalProperties, string file_ignore_pattern)
+		{
+			_inputDir = dir;
+			globals = globalProperties;
+			_ignorePattern = file_ignore_pattern;
+		}
+
 		public int ErrorCount { get; set; }
 
 		public void Search()
 		{
-			var files = Directory.GetFiles(_inputDir.FullName, "*.csproj", SearchOption.AllDirectories);
+			string[] files = Directory.GetFiles(_inputDir.FullName, "*.csproj", SearchOption.AllDirectories);
+			if (_ignorePattern != null)
+			{
+				var filtered = new List<string>();
+				var regex = new Regex(_ignorePattern, RegexOptions.Compiled);
+				foreach (string file in files)
+				{
+					var filename = Path.GetFileName(file);
+					var matches = regex.Match(filename);
+					if (matches.Success)
+					{
+						//Console.WriteLine("Ignoring File: {0}", file);
+					}
+					else
+					{
+						filtered.Add(file);
+					}
+				}
+				files = filtered.ToArray();
+			}
+
 			foreach (var file in files)
 			{
 				ExamineFile(file);
@@ -58,9 +88,9 @@ namespace DuplicateFinder
 			{
 				proj = new Project(file, globals, "14.0");
 			}
-			catch (Exception e)
+			catch (Exception )
 			{
-				Console.WriteLine(e.Message);
+				//Console.WriteLine(e.Message);
 				return;
 			}
 			var root = proj.Xml;

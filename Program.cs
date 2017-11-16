@@ -11,9 +11,9 @@ namespace DuplicateFinder
 	{
 		static void Main(string[] args)
 		{
-			if ((args.Length != 1) && (args.Length != 2))
+			if ((args.Length != 2) && (args.Length != 3))
 			{
-				Console.WriteLine("DuplicateFinder <directory> [properties:...]");
+				Console.WriteLine("DuplicateFinder <directory> <properties:...> [file_ignore_pattern]");
 				return;
 			}
 
@@ -24,7 +24,7 @@ namespace DuplicateFinder
 				return;
 			}
 
-			if (args.Length == 2)
+			if (args.Length >= 2)
 			{
 				var extraProperties = args[1];
 				if (!extraProperties.StartsWith("properties:"))
@@ -32,9 +32,19 @@ namespace DuplicateFinder
 					Console.Write("Error! Optional parameter must start with 'properties:'");
 					return;
 				}
-				Dictionary<String, String> parsedGlobalProperties = Parse(extraProperties);
-				var finder = new DuplicateFinder(dir, parsedGlobalProperties);
-				finder.Search();
+				if (args.Length == 2)
+				{
+					Dictionary<String, String> parsedGlobalProperties = Parse(extraProperties);
+					var finder = new DuplicateFinder(dir, parsedGlobalProperties);
+					finder.Search();
+				}
+				if (args.Length == 3)
+				{
+					var ignoreFilePattern = args[2];
+					Dictionary<String, String> parsedGlobalProperties = Parse(extraProperties);
+					var finder = new DuplicateFinder(dir, parsedGlobalProperties, ignoreFilePattern);
+					finder.Search();
+				}
 			}
 		}
 
